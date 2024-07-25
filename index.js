@@ -1,7 +1,11 @@
-// app.js
 const express = require('express');
 const mongoose = require('mongoose');
-const User = require('./models/user');
+
+const { ValidationError} = require('express-validation');
+const userRoutes = require('./routes/userRoutes');
+const postRoutes = require('./routes/postRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+
 
 const app = express();
 const PORT = 3000;
@@ -13,56 +17,23 @@ mongoose.connect('mongodb://localhost:27017/myapp', {
 
 app.use(express.json());
 
-// Create a new user
-app.post('/users', async (req, res) => {
-    console.log("data", req.body);
-  try {
-    const { username, password, email } = req.body;
-    const user = new User({ username, password, email });
-    await user.save();
-    res.status(201).json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
 
-// Get all users
-app.get('/users', async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+app.use('/users', userRoutes);
+app.use('/posts', postRoutes);
 
-// Update a user
-app.patch('/users/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { username, password, email } = req.body;
-    const user = await User.findById(id);
-    if (!user) throw new Error('User not found');
-    if (username) user.username = username;
-    if (password) user.password = password;
-    if (email) user.email = email;
-    await user.save();
-    res.json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
+app.use('/comments', commentRoutes);
 
-// Delete a user
-app.delete('/users/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await User.findByIdAndDelete(id);
-    res.json({ message: 'User deleted' });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+
+
+//should only be executed to check validation error. if we dont write return in res.json in any api, then the code redirects line 22
+app.use(function(err, req, res, next) {
+  console.log("Error : ",err);
+  if (err instanceof ValidationError) {
+    return res.status(err.statusCode).json(err)
   }
-});
+  return res.status(500).json(err)
+}) //fn which has access to res, req
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

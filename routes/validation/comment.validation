@@ -1,0 +1,10 @@
+const Joi = require("joi");
+module.exports = {
+    createComment: {
+        body: Joi.object({
+            comment: Joi.string().required(),
+            createdBy: Joi.string().required(),
+        })
+    },
+    
+}
